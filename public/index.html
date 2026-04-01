@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chakropop SMTP — ចក្រភព SMTP</title>
+<link rel="icon" type="image/png" href="https://lh3.googleusercontent.com/a/ACg8ocKvFKZWo1wv_W9Z9pkpmZJHEDk8yyOn3LEF1ecQ4bxHwQKQ_9w=s192-c-mo">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&family=Nunito:ital,wght@0,200..1000;1,200..1000&family=Kantumruy+Pro:ital,wght@0,300..700;1,300..700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+  :root {
+    --bg-void:#010204;--bg-base:#0a0c10;--bg-base-rgb:10,12,16;--bg-surface:#0f1218;--bg-elevated:#161a22;
+    --bg-hover:#1d222d;--bg-active:#252c3a;
+    --bg-soft:rgba(255,255,255,0.03);--bg-overlay:rgba(255,255,255,0.015);
+    --border-faint:rgba(255,255,255,0.04);--border-subtle:rgba(255,255,255,0.08);--border-visible:rgba(255,255,255,0.12);
+    --text-primary:#f1f3f7;--text-secondary:#949db1;--text-muted:#5e6a82;--text-placeholder:#3d4352;
+    --accent:#3e82f7;--accent-rgb:62,130,247;--accent-glow:rgba(62,130,247,0.15);--accent-dim:rgba(62,130,247,0.08);
+    --green:#10b981;--red:#ef4444;--amber:#f59e0b;--purple:#8b5cf6;
+    --radius-sm:6px;--radius-md:12px;--radius-lg:18px;
+    --font-mono:'JetBrains Mono',monospace;--font-body:'Inter','Kantumruy Pro','Nunito',sans-serif;--font-serif:'Kantumruy Pro','Nunito',serif;
+    --shadow-float:0 12px 48px rgba(0,0,0,0.8);--shadow-sm:0 2px 4px rgba(0,0,0,0.2);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  body.light-mode {
+    --bg-void:#f8fafc;--bg-base:#ffffff;--bg-base-rgb:255,255,255;--bg-surface:#ffffff;--bg-elevated:#f1f5f9;
+    --bg-hover:#f1f5f9;--bg-active:#e2e8f0;
+    --bg-soft:rgba(15,23,42,0.03);--bg-overlay:rgba(15,23,42,0.01);
+    --border-faint:rgba(15,23,42,0.05);--border-subtle:rgba(15,23,42,0.08);--border-visible:rgba(15,23,42,0.12);
+    --text-primary:#0f172a;--text-secondary:#475569;--text-muted:#64748b;--text-placeholder:#94a3b8;
+    --accent:#2563eb;--accent-rgb:37,99,235;--accent-glow:rgba(37,99,235,0.12);--accent-dim:rgba(37,99,235,0.06);
+    --shadow-float:0 12px 40px rgba(15,23,42,0.08);--shadow-sm:0 1px 2px rgba(15,23,42,0.05);
+  }
+
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:var(--font-body);background:var(--bg-void);color:var(--text-primary);min-height:100vh;display:flex;flex-direction:column;transition:background 0.3s, color 0.3s;}
+
+  .theme-toggle{cursor:pointer;width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);border:1px solid var(--border-subtle);color:var(--text-secondary);transition:all .25s ease;padding:0;margin-left:12px;box-shadow:var(--shadow-sm);}
+  .theme-toggle:hover{background:var(--bg-hover);color:var(--accent);transform:translateY(-1px);border-color:var(--accent-glow);box-shadow:0 4px 12px var(--accent-glow);}
+  .theme-toggle i{width:18px;height:18px;}
+
+  /* Header */
+  i[data-lucide]{width:16px;height:16px;stroke-width:2px;vertical-align:middle;}
+  .app-header{display:flex;align-items:center;gap:14px;padding:16px 24px;border-bottom:1px solid var(--border-faint);background:rgba(var(--bg-base-rgb), 0.8);backdrop-filter:blur(12px);position:sticky;top:0;z-index:100;box-shadow:0 1px 0 var(--border-faint);}
+  .logo-icon{width:36px;height:36px;border-radius:10px;overflow:hidden;border:1px solid var(--border-visible);display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);box-shadow:var(--shadow-sm);transition:transform 0.3s ease;}
+  .logo-icon img{width:82%;height:82%;object-fit:cover;border-radius:4px;}
+  .logo-icon:hover{transform:scale(1.05) rotate(-3deg);}
+  .logo-name{font-family:var(--font-mono);font-size:16px;font-weight:700;letter-spacing:-0.4px;color:var(--text-primary);}
+  .logo-name span{color:var(--accent);text-shadow:0 0 15px var(--accent-glow);}
+  .header-badge{margin-left:auto;font-family:var(--font-mono);font-size:10px;font-weight:600;color:var(--text-muted);background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:6px;padding:4px 10px;letter-spacing:0.8px;text-transform:uppercase;}
+  .server-indicator{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);background:var(--bg-soft);padding:4px 12px;border-radius:20px;border:1px solid var(--border-faint);}
+  .srv-dot{width:8px;height:8px;border-radius:50%;background:var(--red);box-shadow:0 0 8px rgba(239,68,68,0.3);}
+  .srv-dot.online{background:var(--green);box-shadow:0 0 10px rgba(16,185,129,0.5);}
+
+  /* Tabs */
+  .tab-bar{display:flex;background:var(--bg-base);border-bottom:1px solid var(--border-faint);padding:0 24px;gap:4px;}
+  .tab-btn{display:flex;align-items:center;gap:8px;padding:14px 20px;font-size:14px;font-weight:600;color:var(--text-secondary);background:none;border:none;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s ease;letter-spacing:-0.1px;}
+  .tab-btn:hover{color:var(--text-primary);background:var(--bg-soft);}
+  .tab-btn.active{color:var(--accent);border-bottom:2px solid var(--accent);background:var(--accent-dim);}
+  .tab-btn i{width:18px;height:18px;opacity:0.7;transition:opacity 0.2s;}
+  .tab-btn.active i{opacity:1;color:var(--accent);}
+
+  /* Layout */
+  .app-body{display:flex;flex:1;}
+  .tab-panel{display:none;flex:1;}
+  .tab-panel.active{display:flex;flex:1;}
+
+  /* Cards / Fields */
+  .config-panel{flex:1;display:flex;flex-direction:column;max-width:800px;margin:0 auto;padding:40px 24px 64px;gap:32px;}
+  .section-title{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--text-muted);letter-spacing:1.5px;text-transform:uppercase;padding-bottom:14px;border-bottom:1px solid var(--border-subtle);margin-bottom:8px;display:flex;align-items:center;gap:10px;}
+  .config-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:28px;display:flex;flex-direction:column;gap:24px;box-shadow:var(--shadow-sm);transition:all 0.3s ease;}
+  .config-card:hover{border-color:var(--border-visible);box-shadow:var(--shadow-float);}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+  .field-row.triple{grid-template-columns:2fr 1fr 1fr;}
+  .field{display:flex;flex-direction:column;gap:8px;}
+  .field label{font-size:11px;font-weight:700;color:var(--text-secondary);letter-spacing:0.8px;font-family:var(--font-mono);text-transform:uppercase;}
+  .field label .req{color:var(--red);margin-left:4px;font-size:12px;}
+  .field label .hint{color:var(--text-muted);font-weight:400;margin-left:8px;font-size:10px;text-transform:none;letter-spacing:0;}
+
+  input[type=text],input[type=email],input[type=number],input[type=password],select,textarea{
+    background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);
+    color:var(--text-primary);font-family:var(--font-body);font-size:14px;padding:11px 15px;width:100%;outline:none;
+    transition:all 0.2s ease;-webkit-appearance:none;appearance:none;
+  }
+  input[type=text]:focus,input[type=email]:focus,input[type=number]:focus,input[type=password]:focus,select:focus,textarea:focus{
+    border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-glow);background:var(--bg-base);
+  }
+  input::placeholder,textarea::placeholder{color:var(--text-placeholder);opacity:0.75;}
+  input[type=number]{font-family:var(--font-mono);}
+  select{cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' fill='none'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238b91a0' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;}
+  select option{background:var(--bg-elevated);}
+
+  /* Toggle */
+  .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:var(--bg-elevated);border-radius:var(--radius-sm);border:1px solid var(--border-faint);}
+  .toggle-info{display:flex;flex-direction:column;gap:3px;}
+  .toggle-label{font-size:13.5px;font-weight:500;color:var(--text-primary);}
+  .toggle-desc{font-size:11.5px;color:var(--text-muted);font-family:var(--font-mono);}
+  .toggle-switch{position:relative;width:42px;height:24px;flex-shrink:0;}
+  .toggle-switch input{opacity:0;width:0;height:0;}
+  .toggle-slider{position:absolute;inset:0;background:var(--bg-hover);border:1px solid var(--border-visible);border-radius:12px;cursor:pointer;transition:.2s;}
+  .toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:var(--text-muted);border-radius:50%;transition:.2s;}
+  .toggle-switch input:checked+.toggle-slider{background:var(--accent);border-color:var(--accent);}
+  .toggle-switch input:checked+.toggle-slider::before{transform:translateX(18px);background:#fff;}
+
+  /* Presets */
+  .presets{display:flex;gap:8px;flex-wrap:wrap;}
+  .preset-btn{font-family:var(--font-mono);font-size:11px;font-weight:500;color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:20px;padding:5px 12px;cursor:pointer;transition:all .15s;letter-spacing:0.3px;}
+  .preset-btn:hover{color:var(--text-primary);border-color:var(--border-visible);background:var(--bg-hover);}
+  .preset-btn.active{color:var(--accent);border-color:var(--accent);background:var(--accent-dim);}
+
+  /* Connection status */
+  .conn-status{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;border-radius:var(--radius-sm);border:1px solid var(--border-faint);background:var(--bg-elevated);}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--text-muted);flex-shrink:0;margin-top:5px;}
+  .status-dot.ok{background:var(--green);box-shadow:0 0 8px rgba(62,207,142,0.5);}
+  .status-dot.fail{background:var(--red);box-shadow:0 0 8px rgba(247,96,79,0.5);}
+  .status-dot.loading{background:var(--amber);animation:pulse-dot 1s ease-in-out infinite;}
+  @keyframes pulse-dot{0%,100%{opacity:1;}50%{opacity:0.3;}}
+  .status-text{color:var(--text-secondary);flex:1;font-family:var(--font-mono);font-size:12px;line-height:1.6;}
+  .status-text strong{color:var(--text-primary);}
+
+  /* Step log inside status */
+  .step-log{margin-top:8px;display:flex;flex-direction:column;gap:2px;}
+  .step{font-size:11px;font-family:var(--font-mono);padding:1px 0;}
+  .step.ok{color:var(--green);}
+  .step.error{color:var(--red);}
+  .step.warn{color:var(--amber);}
+  .step.info{color:var(--accent);}
+
+  /* Buttons */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 20px;border-radius:var(--radius-sm);font-family:var(--font-body);font-size:14px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .2s cubic-bezier(0.4, 0, 0.2, 1);white-space:nowrap;}
+  .btn:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-primary{background:linear-gradient(135deg, var(--accent), var(--purple));color:#fff;border-color:rgba(255,255,255,0.1);box-shadow:0 4px 15px var(--accent-glow);}
+  .btn-primary:hover:not(:disabled){filter:brightness(1.1);box-shadow:0 6px 20px var(--accent-glow);transform:translateY(-1.5px);}
+  .btn-primary:active:not(:disabled){transform:scale(0.97);}
+  .btn-secondary{background:var(--bg-elevated);color:var(--text-secondary);border:1px solid var(--border-subtle);box-shadow:var(--shadow-sm);}
+  .btn-secondary:hover:not(:disabled){color:var(--text-primary);background:var(--bg-hover);border-color:var(--border-visible);transform:translateY(-1px);}
+  .btn-success{background:rgba(16,185,129,0.1);color:var(--green);border:1px solid rgba(16,185,129,0.2);}
+  .btn-success:hover:not(:disabled){background:rgba(16,185,129,0.15);border-color:var(--green);}
+  .btn-lg{padding:14px 28px;font-size:15px;font-weight:700;border-radius:12px;letter-spacing:0.2px;}
+  .btn-sm{padding:6px 14px;font-size:12px;border-radius:8px;}
+  .btn-row{display:flex;gap:10px;align-items:center;margin-top:4px;}
+
+  .btn-icon-label{display:flex;align-items:center;gap:6px;}
+  .btn i{width:16px;height:16px;stroke-width:1.75px;}
+
+  /* Compose */
+  .compose-panel{flex:1;display:flex;flex-direction:column;max-width:900px;margin:0 auto;padding:32px 24px 48px;gap:20px;width:100%;}
+  .compose-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-float);}
+  .compose-header-bar{display:flex;align-items:center;gap:12px;padding:18px 24px;background:var(--bg-elevated);border-bottom:1px solid var(--border-subtle);}
+  .compose-title{font-family:var(--font-body);font-size:16px;font-weight:700;color:var(--text-primary);letter-spacing:-0.2px;}
+  .compose-status{margin-left:auto;font-family:var(--font-mono);font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;background:var(--bg-soft);padding:3px 10px;border-radius:12px;}
+  .compose-row{display:flex;align-items:center;border-bottom:1px solid var(--border-faint);min-height:56px;transition:all 0.2s ease;}
+  .compose-row:hover{background:var(--bg-overlay);}
+  .compose-row:focus-within{background:var(--accent-dim);border-bottom-color:var(--accent-glow);}
+  .compose-row-label{font-family:var(--font-mono);font-size:11px;font-weight:700;color:var(--text-muted);letter-spacing:1px;width:90px;flex-shrink:0;padding-left:24px;text-transform:uppercase;}
+  .compose-row-input{flex:1;padding:0 20px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;min-height:56px;}
+  .compose-row-input input{background:none;border:none;outline:none;color:var(--text-primary);font-family:var(--font-body);font-size:14.5px;flex:1;min-width:200px;padding:12px 0;}
+  .compose-row-input input::placeholder{color:var(--text-placeholder);opacity:0.6;}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:var(--accent-dim);border:1px solid var(--accent-glow);border-radius:8px;padding:4px 10px;font-size:13px;color:var(--accent);font-family:var(--font-mono);font-weight:500;cursor:default;animation:chip-in .2s ease;}
+  @keyframes chip-in{from{transform:scale(0.85);opacity:0;}to{transform:scale(1);opacity:1;}}
+  .chip-remove{background:none;border:none;cursor:pointer;color:var(--accent);opacity:0.5;font-size:13px;padding:0;display:flex;line-height:1;transition:all .15s;}
+  .chip-remove:hover{color:var(--red);opacity:1;}
+  .subject-input{background:none;border:none;outline:none;color:var(--text-primary);font-family:var(--font-body);font-size:16px;font-weight:600;width:100%;padding:14px 0;}
+  .subject-input::placeholder{color:var(--text-placeholder);opacity:0.6;}
+
+  /* Attachments */
+  .attachments-row{border-top:1px solid var(--border-faint);padding:10px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .attachment-chip{display:inline-flex;align-items:center;gap:6px;background:var(--bg-elevated);border:1px solid var(--border-subtle);border-radius:var(--radius-sm);padding:5px 10px;font-size:12px;color:var(--text-secondary);font-family:var(--font-mono);}
+  .att-size{color:var(--text-muted);font-size:10px;}
+  .attachment-remove{background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:13px;padding:0 0 0 4px;display:flex;transition:color .15s;}
+  .attachment-remove:hover{color:var(--red);}
+  .attach-btn{font-family:var(--font-mono);font-size:11px;color:var(--text-secondary);background:var(--bg-elevated);border:1px solid var(--border-visible);border-radius:var(--radius-sm);padding:6px 12px;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;}
+  .attach-btn:hover{color:var(--text-primary);border-color:var(--accent);background:var(--bg-hover);}
+  .attach-btn i{width:16px;height:16px;}
+
+  /* Toolbar */
+  .rich-toolbar{display:flex;align-items:center;gap:6px;padding:12px 18px;background:var(--bg-base);border-bottom:1px solid var(--border-subtle);flex-wrap:wrap;}
+  .toolbar-group{display:flex;align-items:center;gap:2px;background:var(--bg-elevated);padding:3px;border-radius:8px;border:1px solid var(--border-faint);}
+  .toolbar-btn{width:32px;height:32px;display:grid;place-items:center;background:none;border:none;cursor:pointer;border-radius:6px;color:var(--text-secondary);transition:all .2s ease;}
+  .toolbar-btn:hover{background:var(--bg-hover);color:var(--accent);transform:translateY(-1px);}
+  .toolbar-btn.active{background:var(--accent-dim);color:var(--accent);}
+  .toolbar-btn i{width:16px;height:16px;stroke-width:2.25px;}
+  .toolbar-select{background:var(--bg-elevated);border:1px solid var(--border-subtle);color:var(--text-secondary);font-size:12px;font-family:var(--font-mono);font-weight:600;border-radius:6px;padding:4px 10px;cursor:pointer;outline:none;height:32px;transition:all 0.2s;}
+  .toolbar-select:hover{border-color:var(--accent-glow);color:var(--text-primary);}
+  .body-editor-wrap{position:relative;background:var(--bg-surface);min-height:400px;}
+  .body-editor{min-height:400px;padding:32px;outline:none;font-family:var(--font-body);font-size:16px;line-height:1.85;color:var(--text-primary);caret-color:var(--accent);}
+  .body-editor:empty::before{content:attr(data-placeholder);color:var(--text-placeholder);pointer-events:none;position:absolute;opacity:0.6;}
+
+  /* Actions */
+  .compose-actions{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);padding:16px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .priority-select{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-secondary);font-family:var(--font-mono);}
+  .priority-select select{padding:5px 28px 5px 8px;font-size:12px;width:auto;}
+
+  /* Log */
+  .log-panel{flex:1;display:flex;flex-direction:column;padding:32px 24px;max-width:900px;margin:0 auto;width:100%;gap:20px;}
+  .log-card{background:var(--bg-surface);border:1px solid var(--border-subtle);border-radius:var(--radius-lg);overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:400px;}
+  .log-topbar{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--bg-elevated);border-bottom:1px solid var(--border-faint);}
+  .log-topbar-title{font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--text-primary);letter-spacing:0.5px;}
+  .log-count{margin-left:auto;font-family:var(--font-mono);font-size:11px;color:var(--text-muted);background:var(--bg-hover);border-radius:10px;padding:2px 8px;}
+  .log-body{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:4px;}
+  .log-entry{display:flex;align-items:flex-start;gap:14px;padding:12px 16px;border-radius:var(--radius-md);background:var(--bg-elevated);border:1px solid var(--border-subtle);animation:log-slide .3s cubic-bezier(0.34, 1.56, 0.64, 1);}
+  @keyframes log-slide{from{transform:translateX(-10px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  .log-badge{font-family:var(--font-mono);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;text-transform:uppercase;letter-spacing:0.5px;flex-shrink:0;margin-top:2px;}
+  .log-badge.sent{background:rgba(62,207,142,0.15);color:var(--green);border:1px solid rgba(62,207,142,0.25);}
+  .log-badge.fail{background:rgba(247,96,79,0.15);color:var(--red);border:1px solid rgba(247,96,79,0.25);}
+  .log-badge.info{background:rgba(79,142,247,0.1);color:var(--accent);border:1px solid rgba(79,142,247,0.2);}
+  .log-badge.warn{background:rgba(245,166,35,0.12);color:var(--amber);border:1px solid rgba(245,166,35,0.25);}
+  .log-detail{flex:1;min-width:0;}
+  .log-msg{font-size:12.5px;color:var(--text-primary);font-family:var(--font-mono);}
+  .log-meta{font-size:11px;color:var(--text-muted);margin-top:2px;font-family:var(--font-mono);}
+  .log-time{font-family:var(--font-mono);font-size:10.5px;color:var(--text-muted);flex-shrink:0;margin-top:3px;}
+  .log-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-muted);}
+  .log-empty-icon{font-size:36px;opacity:0.4;}
+  .log-empty-text{font-size:13px;font-family:var(--font-mono);}
+
+  /* Toast */
+  .toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+  .toast{display:flex;align-items:flex-start;gap:12px;padding:16px 20px;background:var(--bg-elevated);border:1px solid var(--border-visible);border-radius:var(--radius-md);box-shadow:var(--shadow-float);font-size:14px;color:var(--text-primary);pointer-events:all;animation:toast-in .4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;max-width:420px;backdrop-filter:blur(10px);}
+  @keyframes toast-in{from{transform:translateY(24px) scale(0.9);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
+  .toast.toast-out{animation:toast-in .3s ease reverse forwards;}
+  .toast-icon{margin-top:2px;flex-shrink:0;}
+  .toast-body{flex:1;}
+  .toast-title{font-weight:700;font-size:14px;letter-spacing:-0.1px;}
+  .toast-desc{font-size:13px;color:var(--text-secondary);margin-top:4px;line-height:1.55;}
+
+  /* Modal */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:500;place-items:center;backdrop-filter:blur(4px);}
+  .modal-overlay.open{display:grid;animation:fade-in .2s ease;}
+  @keyframes fade-in{from{opacity:0;}to{opacity:1;}}
+  .modal{background:var(--bg-surface);border:1px solid var(--border-visible);border-radius:var(--radius-lg);box-shadow:var(--shadow-float);padding:32px;width:540px;max-width:calc(100vw - 40px);animation:modal-up .35s cubic-bezier(0.34, 1.56, 0.64, 1);}
+  @keyframes modal-up{from{transform:translateY(40px) scale(0.95);opacity:0;}to{transform:translateY(0) scale(1);opacity:1;}}
+  .modal-title{font-family:var(--font-body);font-size:22px;font-weight:800;letter-spacing:-0.4px;margin-bottom:12px;color:var(--text-primary);}
+  .modal-desc{font-size:14px;color:var(--text-secondary);line-height:1.7;margin-bottom:24px;}
+  .modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;}
+
+  ::-webkit-scrollbar{width:5px;height:5px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  ::-webkit-scrollbar-thumb{background:var(--border-visible);border-radius:10px;}
+
+  @media(max-width:640px){
+    .field-row,.field-row.triple{grid-template-columns:1fr;}
+    .compose-row-label{width:45px;font-size:10px;}
+    .config-panel,.compose-panel,.log-panel{padding:20px 16px 40px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+    <div class="logo-icon">
+      <img src="https://lh3.googleusercontent.com/a/ACg8ocKvFKZWo1wv_W9Z9pkpmZJHEDk8yyOn3LEF1ecQ4bxHwQKQ_9w=s192-c-mo" alt="Logo">
+    </div>
+    <div class="logo-name">Chakropop <span>SMTP</span></div>
+  </div>
+  <div class="server-indicator">
+    <div class="srv-dot" id="srv-dot"></div>
+    <span id="srv-label">checking server…</span>
+  </div>
+  <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+    <i data-lucide="moon" id="theme-icon"></i>
+  </button>
+  <span class="header-badge">SMTP CLIENT</span>
+</header>
+
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('smtp')" id="tab-smtp"><i data-lucide="settings"></i> SMTP Config</button>
+  <button class="tab-btn" onclick="switchTab('compose')" id="tab-compose"><i data-lucide="pen-tool"></i> Compose</button>
+  <button class="tab-btn" onclick="switchTab('log')" id="tab-log">
+    <i data-lucide="clipboard-list"></i> Delivery Log
+    <span id="log-badge" style="display:none;background:var(--accent);color:#fff;font-size:10px;font-family:var(--font-mono);padding:1px 6px;border-radius:10px;margin-left:4px;"></span>
+  </button>
+</div>
+
+<div class="app-body">
+
+  <!-- ══════════ SMTP CONFIG ══════════ -->
+  <div class="tab-panel active" id="panel-smtp">
+    <form class="config-panel" id="smtp-config-form" autocomplete="off" onsubmit="return false">
+
+      <div>
+        <div class="section-title">Quick Presets</div>
+        <div class="presets" style="margin-top:12px;">
+          <button class="preset-btn" onclick="applyPreset('gmail')">Gmail</button>
+          <button class="preset-btn" onclick="applyPreset('outlook')">Outlook</button>
+          <button class="preset-btn" onclick="applyPreset('yahoo')">Yahoo</button>
+          <button class="preset-btn" onclick="applyPreset('sendgrid')">SendGrid</button>
+          <button class="preset-btn" onclick="applyPreset('mailgun')">Mailgun</button>
+          <button class="preset-btn" onclick="applyPreset('ses')">AWS SES</button>
+          <button class="preset-btn" onclick="applyPreset('custom')">Custom</button>
+        </div>
+      </div>
+
+      <div class="config-card" style="border-left: 4px solid var(--green); background: linear-gradient(to right, var(--accent-glow), var(--bg-surface));">
+        <div class="section-title" style="color:var(--green); font-family: var(--font-body); font-weight: 700;">🛡️ ឯកជនភាព និង ទំនុកចិត្ត (Privacy & Trust)</div>
+        <div style="font-size:13px; color:var(--text-secondary); line-height:1.6; display:flex; flex-direction:column; gap:8px;">
+          <p><strong>មិនរក្សាទុកទិន្នន័យ (Zero Data Retention):</strong> មាតិកាអ៊ីមែល និងព័ត៌មានសម្ងាត់ SMTP របស់អ្នកមិនដែលប៉ះពាល់ដល់មូលដ្ឋានទិន្នន័យរបស់យើងទេ។ យើងមិនរក្សាទុក ប្រមូល ឬលក់ទិន្នន័យរបស់អ្នកទេ។</p>
+          <p><strong>ឯកជនភាពលើកម្មវិធីរុករក (Client-Side Privacy):</strong> ការកំណត់ទាំងអស់ត្រូវបានរក្សាទុកក្នុងមូលដ្ឋានក្នុង <code>localStorage</code> នៃកម្មវិធីរុករករបស់អ្នក។ គ្មានការតាមដានសម័យម៉ាស៊ីនបម្រើទេ។</p>
+          <p><strong>កូដចំហ (Open Source):</strong> ប្រតិបត្តិការ SMTP ច្បាស់លាស់ ដូច្នេះអ្នកអាចផ្ទៀងផ្ទាត់យ៉ាងច្បាស់ពីរបៀបដែលសាររបស់អ្នកត្រូវបានចាត់ចែង។</p>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <div class="section-title">Server Settings</div>
+        <div class="field-row triple">
+          <div class="field">
+            <label>EMAIL HOST <span class="req">*</span></label>
+            <input type="text" id="cfg-host" name="smtp-host" autocomplete="off" placeholder="smtp.gmail.com" oninput="checkGmailHint()" data-lpignore="true" data-bwignore="true" />
+          </div>
+          <div class="field">
+            <label>PORT <span class="req">*</span></label>
+            <input type="number" id="cfg-port" name="smtp-port" autocomplete="off" placeholder="587" min="1" max="65535" data-lpignore="true" data-bwignore="true" />
+          </div>
+          <div class="field">
+            <label>ENCRYPTION</label>
+            <select id="cfg-enc" name="smtp-enc" autocomplete="off" data-lpignore="true" data-bwignore="true">
+              <option value="starttls">STARTTLS (587)</option>
+              <option value="ssl">SSL/TLS (465)</option>
+              <option value="none">None (25)</option>
+            </select>
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>USERNAME / EMAIL <span class="req">*</span></label>
+            <input type="email" id="cfg-user" name="smtp-user" autocomplete="off" placeholder="you@gmail.com" oninput="checkGmailHint()" data-lpignore="true" data-bwignore="true" />
+          </div>
+          <div class="field">
+            <label>PASSWORD / APP PASSWORD <span class="req">*</span></label>
+            <input type="password" id="cfg-pass" name="smtp-pass" autocomplete="off" placeholder="••••••••••••" oninput="checkGmailHint()" data-lpignore="true" data-bwignore="true" />
+            <div id="gmail-hint" style="display:none; font-size:10px; color:var(--amber); font-family:var(--font-mono); margin-top:4px;">
+              💡 Gmail requires an <b>App Password</b> with 2FA enabled.
+            </div>
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Reject Unauthorized TLS Certificates</div>
+            <div class="toggle-desc">rejectUnauthorized — disable for self-signed certs</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="cfg-reject" checked />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Require TLS Upgrade</div>
+            <div class="toggle-desc">requireTLS — force STARTTLS, reject plain connections</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="cfg-requiretls" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="config-card">
+        <div class="section-title">Auth & Advanced</div>
+        <div class="field-row">
+          <div class="field">
+            <label>AUTH METHOD</label>
+            <select id="cfg-auth" name="smtp-auth" autocomplete="off" data-lpignore="true" data-bwignore="true">
+              <option value="plain">PLAIN</option>
+              <option value="login">LOGIN</option>
+              <option value="oauth2">OAUTH2</option>
+              <option value="xoauth2">XOAUTH2</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>CONNECTION TIMEOUT <span class="hint">ms</span></label>
+            <input type="number" id="cfg-timeout" name="smtp-timeout" autocomplete="off" placeholder="10000" data-lpignore="true" data-bwignore="true" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>GREETING TIMEOUT <span class="hint">ms</span></label>
+            <input type="number" id="cfg-greet" name="smtp-greet" autocomplete="off" placeholder="8000" data-lpignore="true" data-bwignore="true" />
+          </div>
+          <div class="field">
+            <label>RATE LIMIT <span class="hint">msgs/sec, 0 = off</span></label>
+            <input type="number" id="cfg-rate" name="smtp-rate" autocomplete="off" placeholder="0" min="0" data-lpignore="true" data-bwignore="true" />
+          </div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>MAX CONNECTIONS</label>
+            <input type="number" id="cfg-maxconn" name="smtp-maxconn" autocomplete="off" placeholder="5" min="1" data-lpignore="true" data-bwignore="true" />
+          </div>
+          <div class="field">
+            <label>MAX MESSAGES / CONN</label>
+            <input type="number" id="cfg-maxmsg" name="smtp-maxmsg" autocomplete="off" placeholder="100" min="1" data-lpignore="true" data-bwignore="true" />
+          </div>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Connection Pooling</div>
+            <div class="toggle-desc">Reuse connections for bulk sending</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="cfg-pool" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="toggle-row">
+          <div class="toggle-info">
+            <div class="toggle-label">Debug Mode</div>
+            <div class="toggle-desc">Log raw SMTP conversation to Delivery Log</div>
+          </div>
+          <label class="toggle-switch">
+            <input type="checkbox" id="cfg-debug" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Connection Test -->
+      <div class="config-card">
+        <div class="section-title">Connection Test</div>
+        <div class="conn-status" id="conn-status">
+          <div class="status-dot" id="status-dot"></div>
+          <div class="status-text" id="status-text">
+            Not tested — fill in server settings and click <strong>Test Connection</strong>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary" id="btn-test" onclick="testConnection()"><i data-lucide="plug-2"></i> Test Connection</button>
+          <button class="btn btn-primary" onclick="saveConfig()"><i data-lucide="save"></i> Save Config</button>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" onclick="exportConfig()"><i data-lucide="download"></i> Export</button>
+            <button class="btn btn-secondary btn-sm" onclick="document.getElementById('import-file').click()"><i data-lucide="upload"></i> Import</button>
+            <input type="file" id="import-file" accept=".json" style="display:none" onchange="importConfig(event)">
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- ══════════ COMPOSE ══════════ -->
+  <div class="tab-panel" id="panel-compose">
+    <div class="compose-panel">
+      <div class="compose-card">
+        <div class="compose-header-bar">
+          <span class="compose-title">New Message</span>
+          <span class="compose-status" id="compose-status">Draft</span>
+        </div>
+        <div>
+          <!-- FROM -->
+          <div class="compose-row">
+            <div class="compose-row-label">FROM</div>
+            <div class="compose-row-input">
+              <input type="text" id="from-field" autocomplete="off" placeholder='Sender Name &lt;from@example.com&gt;' data-lpignore="true" data-bwignore="true" />
+            </div>
+            <div style="display:flex;align-items:center;padding:0 12px;">
+              <select id="replyto-toggle" onchange="toggleReplyTo()" style="background:var(--bg-elevated);border:1px solid var(--border-subtle);color:var(--text-secondary);font-size:11px;font-family:var(--font-mono);border-radius:4px;padding:3px 6px;cursor:pointer;outline:none;" data-lpignore="true" data-bwignore="true">
+                <option value="">+ Reply-To</option>
+                <option value="show">Reply-To ▲</option>
+              </select>
+            </div>
+          </div>
+          <!-- REPLY-TO -->
+          <div class="compose-row" id="replyto-row" style="display:none;">
+            <div class="compose-row-label">REPLY</div>
+            <div class="compose-row-input"><input type="email" id="reply-to" autocomplete="off" placeholder="replyto@example.com" data-lpignore="true" data-bwignore="true" /></div>
+          </div>
+          <!-- TO -->
+          <div class="compose-row">
+            <div class="compose-row-label">TO</div>
+            <div class="compose-row-input" id="to-chips">
+              <input type="email" id="to-input" autocomplete="off" placeholder="recipient@example.com" onkeydown="handleChip(event,'to')" onblur="blurChip('to')" data-lpignore="true" data-bwignore="true" />
+            </div>
+          </div>
+          <!-- CC -->
+          <div class="compose-row" id="cc-row" style="display:none;">
+            <div class="compose-row-label">CC</div>
+            <div class="compose-row-input" id="cc-chips">
+              <input type="email" id="cc-input" autocomplete="off" placeholder="cc@example.com" onkeydown="handleChip(event,'cc')" onblur="blurChip('cc')" data-lpignore="true" data-bwignore="true" />
+            </div>
+          </div>
+          <!-- BCC -->
+          <div class="compose-row" id="bcc-row" style="display:none;">
+            <div class="compose-row-label">BCC</div>
+            <div class="compose-row-input" id="bcc-chips">
+              <input type="email" id="bcc-input" autocomplete="off" placeholder="bcc@example.com" onkeydown="handleChip(event,'bcc')" onblur="blurChip('bcc')" data-lpignore="true" data-bwignore="true" />
+            </div>
+          </div>
+          <!-- CC/BCC toggles -->
+          <div style="padding:6px 20px;border-bottom:1px solid var(--border-faint);display:flex;gap:8px;">
+            <button class="btn btn-secondary btn-sm" id="cc-btn" onclick="toggleField('cc')">+ CC</button>
+            <button class="btn btn-secondary btn-sm" id="bcc-btn" onclick="toggleField('bcc')">+ BCC</button>
+          </div>
+          <!-- SUBJECT -->
+          <div class="compose-row">
+            <div class="compose-row-label">SUBJ</div>
+            <div class="compose-row-input">
+              <input type="text" class="subject-input" id="subject" autocomplete="off" placeholder="Subject line…" oninput="markDirty()" data-lpignore="true" data-bwignore="true" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="rich-toolbar">
+          <select class="toolbar-select" onchange="execCmd('formatBlock',this.value);this.value='p'">
+            <option value="p">Paragraph</option>
+            <option value="h1">Heading 1</option>
+            <option value="h2">Heading 2</option>
+            <option value="h3">Heading 3</option>
+            <option value="blockquote">Blockquote</option>
+            <option value="pre">Code Block</option>
+          </select>
+          
+          <div class="toolbar-group">
+            <button class="toolbar-btn" title="Bold" onclick="execCmd('bold')"><i data-lucide="bold"></i></button>
+            <button class="toolbar-btn" title="Italic" onclick="execCmd('italic')"><i data-lucide="italic"></i></button>
+            <button class="toolbar-btn" title="Underline" onclick="execCmd('underline')"><i data-lucide="underline"></i></button>
+            <button class="toolbar-btn" title="Strikethrough" onclick="execCmd('strikeThrough')"><i data-lucide="strikethrough"></i></button>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-btn" title="Left" onclick="execCmd('justifyLeft')"><i data-lucide="align-left"></i></button>
+            <button class="toolbar-btn" title="Center" onclick="execCmd('justifyCenter')"><i data-lucide="align-center"></i></button>
+            <button class="toolbar-btn" title="Right" onclick="execCmd('justifyRight')"><i data-lucide="align-right"></i></button>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-btn" title="Bullet list" onclick="execCmd('insertUnorderedList')"><i data-lucide="list"></i></button>
+            <button class="toolbar-btn" title="Numbered list" onclick="execCmd('insertOrderedList')"><i data-lucide="list-ordered"></i></button>
+            <button class="toolbar-btn" title="Indent" onclick="execCmd('indent')"><i data-lucide="indent"></i></button>
+            <button class="toolbar-btn" title="Outdent" onclick="execCmd('outdent')"><i data-lucide="outdent"></i></button>
+          </div>
+
+          <div class="toolbar-group">
+            <button class="toolbar-btn" title="Link" onclick="insertLink()"><i data-lucide="link"></i></button>
+            <button class="toolbar-btn" title="Image" onclick="insertImage()"><i data-lucide="image"></i></button>
+            <button class="toolbar-btn" title="Divider" onclick="execCmd('insertHorizontalRule')"><i data-lucide="minus"></i></button>
+            <button class="toolbar-btn" title="Clear formatting" onclick="execCmd('removeFormat')"><i data-lucide="eraser"></i></button>
+          </div>
+
+          <div class="toolbar-sep"></div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+            <input type="color" value="#4f8ef7" onchange="execCmd('foreColor',this.value)" style="width:20px;height:20px;border:none;background:none;cursor:pointer;" title="Text color">
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;margin-left:2px;">
+            <input type="color" value="#ffff00" onchange="execCmd('hiliteColor',this.value)" style="width:20px;height:20px;border:none;background:none;cursor:pointer;" title="Highlight color">
+          </label>
+        </div>
+
+        <!-- Editor -->
+        <div class="body-editor-wrap">
+          <div class="body-editor" id="body-editor" contenteditable="true" data-placeholder="Compose your message…" oninput="markDirty()"></div>
+        </div>
+
+        <!-- Attachments -->
+        <div class="attachments-row" id="attachments-row">
+          <button class="attach-btn" onclick="document.getElementById('file-upload').click()"><i data-lucide="paperclip"></i> Attach Files</button>
+          <input type="file" id="file-upload" multiple style="display:none" onchange="handleAttach(event)" />
+        </div>
+      </div>
+
+      <!-- Actions bar -->
+      <div class="compose-actions">
+        <button class="btn btn-primary btn-lg" id="btn-send" onclick="sendEmail()"><i data-lucide="send"></i> Send Email</button>
+        <button class="btn btn-secondary" onclick="saveDraft()"><i data-lucide="save"></i> Draft</button>
+        <button class="btn btn-secondary" onclick="previewEmail()"><i data-lucide="eye"></i> Preview</button>
+        <button class="btn btn-secondary" onclick="clearCompose()"><i data-lucide="trash-2"></i> Clear</button>
+        <div style="margin-left:auto;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div class="priority-select">
+            Priority:
+            <select id="priority">
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="priority-select">
+            Format:
+            <select id="format">
+              <option value="html">HTML</option>
+              <option value="text">Plain Text</option>
+            </select>
+          </div>
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer;">
+            <label class="toggle-switch" style="width:36px;height:20px;">
+              <input type="checkbox" id="read-receipt" />
+              <span class="toggle-slider"></span>
+            </label>
+            <span style="font-size:12px;color:var(--text-secondary);font-family:var(--font-mono);">Read Receipt</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════ LOG ══════════ -->
+  <div class="tab-panel" id="panel-log">
+    <div class="log-panel">
+      <div class="log-card">
+        <div class="log-topbar">
+          <span class="log-topbar-title">DELIVERY LOG</span>
+          <button class="btn btn-secondary btn-sm" onclick="clearLog()">Clear</button>
+          <span class="log-count" id="log-count">0 entries</span>
+        </div>
+        <div class="log-body">
+          <div id="log-list"></div>
+          <div class="log-empty" id="log-empty">
+            <div class="log-empty-icon"><i data-lucide="inbox" style="width:48px;height:48px;"></i></div>
+            <div class="log-empty-text">No log entries yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Preview Modal -->
+<div class="modal-overlay" id="preview-modal">
+  <div class="modal" style="width:680px;max-height:90vh;overflow-y:auto;">
+    <div class="modal-title">Email Preview</div>
+    <div style="background:var(--bg-void);border:1px solid var(--border-faint);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;font-family:var(--font-mono);font-size:11px;line-height:2;color:var(--text-secondary);" id="preview-headers"></div>
+    <div style="background:#fff;border-radius:var(--radius-sm);padding:20px;min-height:120px;color:#111;" id="preview-body"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal('preview-modal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ──────────────────────────────────────────────
+//  State
+// ──────────────────────────────────────────────
+var API = (window.location.origin && window.location.origin !== 'null') ? window.location.origin : 'http://127.0.0.1:3500';
+var toChips = [], ccChips = [], bccChips = [];
+var attachFiles = []; // {name, size, data(base64)}
+var logEntries = [];
+
+// ──────────────────────────────────────────────
+//  Server health check
+// ──────────────────────────────────────────────
+function checkServer() {
+  fetch(API + '/api/health', {
+    method: 'GET',
+    signal: AbortSignal.timeout ? AbortSignal.timeout(3000) : undefined
+  })
+  .then(function() { setServerOnline(true); })
+  .catch(function() { setServerOnline(false); });
+}
+
+function setServerOnline(online) {
+  var dot = document.getElementById('srv-dot');
+  var label = document.getElementById('srv-label');
+  if (online) {
+    dot.className = 'srv-dot online';
+    label.textContent = 'backend online';
+  } else {
+    dot.className = 'srv-dot';
+    label.textContent = 'backend offline';
+  }
+}
+
+// ──────────────────────────────────────────────
+//  Presets
+// ──────────────────────────────────────────────
+var PRESETS = {
+  gmail:    { host:'smtp.gmail.com',                         port:587, enc:'starttls', auth:'plain'  },
+  outlook:  { host:'smtp.office365.com',                     port:587, enc:'starttls', auth:'login'  },
+  yahoo:    { host:'smtp.mail.yahoo.com',                    port:587, enc:'starttls', auth:'plain'  },
+  sendgrid: { host:'smtp.sendgrid.net',                      port:587, enc:'starttls', auth:'plain', user:'apikey' },
+  mailgun:  { host:'smtp.mailgun.org',                       port:587, enc:'starttls', auth:'plain'  },
+  ses:      { host:'email-smtp.us-east-1.amazonaws.com',     port:587, enc:'starttls', auth:'login'  },
+  custom:   { host:'',                                       port:25,  enc:'none',     auth:'none'   }
+};
+
+function applyPreset(key) {
+  var p = PRESETS[key];
+  document.getElementById('cfg-host').value = p.host;
+  document.getElementById('cfg-port').value = p.port;
+  document.getElementById('cfg-enc').value  = p.enc;
+  document.getElementById('cfg-auth').value = p.auth;
+  if (p.user) document.getElementById('cfg-user').value = p.user;
+  document.querySelectorAll('.preset-btn').forEach(function(b){ b.classList.remove('active'); });
+  event.target.classList.add('active');
+  showToast('info','Preset applied', p.host || 'Custom config');
+}
+
+// ──────────────────────────────────────────────
+//  Config helpers
+// ──────────────────────────────────────────────
+function readConfig() {
+  var enc = document.getElementById('cfg-enc').value;
+  return {
+    host:              document.getElementById('cfg-host').value.trim(),
+    port:              parseInt(document.getElementById('cfg-port').value) || 587,
+    secure:            enc === 'ssl',
+    requireTLS:        enc === 'starttls' ? document.getElementById('cfg-requiretls').checked : false,
+    username:          document.getElementById('cfg-user').value.trim(),
+    password:          document.getElementById('cfg-pass').value,
+    rejectUnauthorized:document.getElementById('cfg-reject').checked,
+    connectionTimeout: parseInt(document.getElementById('cfg-timeout').value) || 10000,
+    greetingTimeout:   parseInt(document.getElementById('cfg-greet').value) || 8000,
+    rateLimit:         parseInt(document.getElementById('cfg-rate').value) || 0,
+    maxConnections:    parseInt(document.getElementById('cfg-maxconn').value) || 5,
+    maxMessages:       parseInt(document.getElementById('cfg-maxmsg').value) || 100,
+    auth:              document.getElementById('cfg-auth').value,
+    pool:              document.getElementById('cfg-pool').checked,
+    debug:             document.getElementById('cfg-debug').checked,
+  };
+}
+
+function saveConfig() {
+  var cfg = readConfig();
+  if (!cfg.host) { showToast('error','Missing host','Enter the SMTP server hostname.'); return; }
+  var toStore = Object.assign({}, cfg);
+  toStore.password = ''; // don't persist password
+  localStorage.setItem('mf_config', JSON.stringify(toStore));
+  showToast('success','Config saved','Settings stored (password not persisted).');
+  addLog('info','Configuration saved','host='+cfg.host+' port='+cfg.port);
+}
+
+function loadConfig() {
+  var raw = localStorage.getItem('mf_config');
+  if (!raw) return;
+  try {
+    var c = JSON.parse(raw);
+    if (c.host)              document.getElementById('cfg-host').value = c.host;
+    if (c.port)              document.getElementById('cfg-port').value = c.port;
+    if (c.secure !== undefined) document.getElementById('cfg-enc').value = c.secure ? 'ssl' : (c.requireTLS ? 'starttls' : 'none');
+    if (c.username)          document.getElementById('cfg-user').value = c.username;
+    if (c.auth)              document.getElementById('cfg-auth').value = c.auth;
+    document.getElementById('cfg-reject').checked    = c.rejectUnauthorized !== false;
+    document.getElementById('cfg-requiretls').checked = !!c.requireTLS;
+    document.getElementById('cfg-pool').checked      = !!c.pool;
+    document.getElementById('cfg-debug').checked     = !!c.debug;
+    if (c.connectionTimeout) document.getElementById('cfg-timeout').value = c.connectionTimeout;
+    if (c.greetingTimeout)   document.getElementById('cfg-greet').value   = c.greetingTimeout;
+    if (c.maxConnections)    document.getElementById('cfg-maxconn').value  = c.maxConnections;
+    if (c.maxMessages)       document.getElementById('cfg-maxmsg').value   = c.maxMessages;
+  } catch(e) {}
+}
+
+function exportConfig() {
+  var cfg = readConfig(); cfg.password = '***REDACTED***';
+  var b = new Blob([JSON.stringify(cfg,null,2)],{type:'application/json'});
+  var a = document.createElement('a'); a.href=URL.createObjectURL(b); a.download='mailforge-config.json'; a.click();
+  showToast('success','Exported','Password was redacted.');
+}
+
+function importConfig(e) {
+  var f = e.target.files[0]; if(!f)return;
+  var r = new FileReader();
+  r.onload = function(ev) {
+    try {
+      var c = JSON.parse(ev.target.result);
+      if(c.host) document.getElementById('cfg-host').value = c.host;
+      if(c.port) document.getElementById('cfg-port').value = c.port;
+      if(c.auth) document.getElementById('cfg-auth').value = c.auth;
+      if(c.username) document.getElementById('cfg-user').value = c.username;
+      showToast('success','Imported','Config loaded (re-enter password).');
+    } catch(err) { showToast('error','Import failed','Invalid JSON.'); }
+  };
+  r.readAsText(f); e.target.value='';
+}
+
+// ──────────────────────────────────────────────
+//  Real connection test → backend
+// ──────────────────────────────────────────────
+function testConnection() {
+  var cfg = readConfig();
+  if (!cfg.host) { showToast('error','Missing host','Enter the SMTP server hostname.'); return; }
+
+  var dot  = document.getElementById('status-dot');
+  var txt  = document.getElementById('status-text');
+  var btn  = document.getElementById('btn-test');
+
+  dot.className = 'status-dot loading';
+  txt.innerHTML = '<strong>Connecting…</strong><div class="step-log" id="step-log"></div>';
+  btn.disabled  = true;
+
+  fetch(API + '/api/test', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(cfg)
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    var logEl = document.getElementById('step-log');
+    if (logEl && data.steps) {
+      data.steps.forEach(function(s) {
+        var d = document.createElement('div');
+        d.className = 'step ' + (s.level === 'ok' ? 'ok' : s.level === 'error' ? 'error' : s.level === 'warn' ? 'warn' : 'info');
+        d.textContent = s.msg;
+        logEl.appendChild(d);
+      });
+    }
+    if (data.ok) {
+      dot.className = 'status-dot ok';
+      txt.querySelector('strong').textContent = '✓ Connection successful — ' + cfg.host + ':' + cfg.port;
+      addLog('info','Connection test passed',cfg.host+':'+cfg.port+' auth='+cfg.auth);
+      showToast('success','Connected!',cfg.host+':'+cfg.port+' is reachable and auth OK.');
+    } else {
+      dot.className = 'status-dot fail';
+      txt.querySelector('strong').textContent = '✕ Connection failed';
+      addLog('fail','Connection test failed',cfg.host+':'+cfg.port);
+      showToast('error','Connection failed','Check the details in SMTP Config panel.');
+    }
+  })
+  .catch(function(err) {
+    dot.className = 'status-dot fail';
+    txt.innerHTML = '<strong>✕ Backend unreachable</strong><div class="step-log"><div class="step error">Cannot reach MailForge backend at '+API+'</div><div class="step warn">Make sure you ran: node server.js</div></div>';
+    showToast('error','Backend offline','Start the server with: node server.js');
+  })
+  .finally(function() { btn.disabled = false; });
+}
+
+// ──────────────────────────────────────────────
+//  Send email → backend
+// ──────────────────────────────────────────────
+function sendEmail() {
+  var smtp = readConfig();
+  if (!smtp.host)   { showToast('error','No SMTP config','Configure SMTP settings first.'); switchTab('smtp'); return; }
+  if (!smtp.username) { showToast('error','No username','Enter SMTP username/email.'); switchTab('smtp'); return; }
+
+  // Finalise any typed-but-not-chipped address
+  ['to','cc','bcc'].forEach(function(f) {
+    var v = document.getElementById(f+'-input').value.trim();
+    if (v && isEmail(v)) { addChip(f,v); document.getElementById(f+'-input').value=''; }
+  });
+
+  var from    = document.getElementById('from-field').value.trim();
+  var replyTo = document.getElementById('reply-to').value.trim();
+  var subject = document.getElementById('subject').value.trim();
+  var bodyEl  = document.getElementById('body-editor');
+  var format  = document.getElementById('format').value;
+  var priority= document.getElementById('priority').value;
+  var receipt = document.getElementById('read-receipt').checked;
+
+  if (!from)          { showToast('error','Missing FROM','Enter sender name/email.'); return; }
+  if (!toChips.length){ showToast('error','No recipients','Add at least one TO address.'); return; }
+
+  var mail = {
+    from: from, to: toChips, cc: ccChips, bcc: bccChips,
+    replyTo: replyTo || undefined,
+    subject: subject,
+    body: format === 'html' ? bodyEl.innerHTML : bodyEl.innerText,
+    bodyText: bodyEl.innerText,
+    format: format, priority: priority, readReceipt: receipt,
+    attachments: attachFiles.map(function(a){ return {name:a.name, data:a.data}; })
+  };
+
+  var btn = document.getElementById('btn-send');
+  btn.disabled = true; btn.textContent = '⏳ Sending…';
+
+  fetch(API + '/api/send', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ smtp: smtp, mail: mail })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data) {
+    if (data.ok) {
+      showToast('success','Email sent! 🎉','To: '+toChips.join(', '));
+      addLog('sent','Sent → '+toChips.join(', '),'Subject: "'+subject+'" | id: '+(data.messageId||'—'));
+      setComposeStatus('✓ Sent', 'var(--green)');
+    } else {
+      showToast('error','Send failed', data.error || 'Unknown error');
+      addLog('fail','Send failed: '+(data.error||'unknown'),'To: '+toChips.join(', '));
+      setComposeStatus('Send failed', 'var(--red)');
+    }
+  })
+  .catch(function() {
+    showToast('error','Backend offline','Start the server: node server.js');
+    addLog('fail','Send aborted','Backend unreachable');
+  })
+  .finally(function() { btn.disabled=false; btn.innerHTML='🚀 Send Email'; });
+}
+
+// ──────────────────────────────────────────────
+//  Compose helpers
+// ──────────────────────────────────────────────
+function toggleReplyTo() {
+  var v = document.getElementById('replyto-toggle').value;
+  document.getElementById('replyto-row').style.display = v === 'show' ? 'flex' : 'none';
+}
+
+function toggleField(f) {
+  var row = document.getElementById(f+'-row');
+  var btn = document.getElementById(f+'-btn');
+  var vis = row.style.display !== 'none';
+  row.style.display = vis ? 'none' : 'flex';
+  btn.textContent   = vis ? '+ '+f.toUpperCase() : '− '+f.toUpperCase();
+}
+
+function isEmail(s) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s); }
+
+function handleChip(e, f) {
+  if (['Enter','Tab',',',' '].indexOf(e.key) !== -1) {
+    e.preventDefault();
+    var v = e.target.value.replace(/,$/,'').trim();
+    if (v && isEmail(v)) { addChip(f, v); e.target.value=''; }
+  }
+  if (e.key === 'Backspace' && !e.target.value) {
+    var arr = f==='to'?toChips:f==='cc'?ccChips:bccChips;
+    if (arr.length) removeChip(f, arr[arr.length-1]);
+  }
+}
+
+function blurChip(f) {
+  var inp = document.getElementById(f+'-input');
+  var v = inp.value.trim().replace(/,$/,'');
+  if (v && isEmail(v)) { addChip(f,v); inp.value=''; }
+}
+
+function addChip(f, email) {
+  var arr = f==='to'?toChips:f==='cc'?ccChips:bccChips;
+  if (arr.indexOf(email) !== -1) return;
+  arr.push(email); renderChips(f); markDirty();
+}
+
+function removeChip(f, email) {
+  var arr = f==='to'?toChips:f==='cc'?ccChips:bccChips;
+  var i = arr.indexOf(email); if(i!==-1) arr.splice(i,1);
+  renderChips(f);
+}
+
+function renderChips(f) {
+  var arr = f==='to'?toChips:f==='cc'?ccChips:bccChips;
+  var c = document.getElementById(f+'-chips');
+  var inp = document.getElementById(f+'-input');
+  c.innerHTML='';
+  arr.forEach(function(e){
+    var el = document.createElement('span'); el.className='chip';
+    el.innerHTML = e+' <button class="chip-remove">×</button>';
+    el.querySelector('.chip-remove').onclick = (function(em){ return function(){ removeChip(f,em); }; })(e);
+    c.appendChild(el);
+  });
+  c.appendChild(inp);
+}
+
+// Attachments — read as base64
+function handleAttach(e) {
+  var files = Array.prototype.slice.call(e.target.files);
+  var done = 0;
+  files.forEach(function(file) {
+    var r = new FileReader();
+    r.onload = function(ev) {
+      var b64 = ev.target.result.split(',')[1];
+      attachFiles.push({ name:file.name, size:file.size, data:b64 });
+      done++;
+      if (done===files.length) renderAttachments();
+    };
+    r.readAsDataURL(file);
+  });
+  e.target.value='';
+}
+
+function renderAttachments() {
+  var row = document.getElementById('attachments-row');
+  row.innerHTML = '<button class="attach-btn" onclick="document.getElementById(\'file-upload\').click()">📎 Attach Files</button><input type="file" id="file-upload" multiple style="display:none" onchange="handleAttach(event)" />';
+  attachFiles.forEach(function(f, i) {
+    var ch = document.createElement('div'); ch.className='attachment-chip';
+    ch.innerHTML = '📄 '+f.name+'<span class="att-size"> '+fmtSize(f.size)+'</span><button class="attachment-remove">×</button>';
+    ch.querySelector('.attachment-remove').onclick = (function(idx){ return function(){ attachFiles.splice(idx,1); renderAttachments(); }; })(i);
+    row.appendChild(ch);
+  });
+}
+
+function fmtSize(b) {
+  if(b<1024) return b+'B';
+  if(b<1048576) return (b/1024).toFixed(1)+'KB';
+  return (b/1048576).toFixed(1)+'MB';
+}
+
+function execCmd(cmd, val) { document.getElementById('body-editor').focus(); document.execCommand(cmd, false, val||null); }
+function insertLink() { var u=prompt('URL:'); if(u) execCmd('createLink',u); }
+function insertImage() { var u=prompt('Image URL:'); if(u) execCmd('insertImage',u); }
+
+function markDirty() { setComposeStatus('Unsaved draft','var(--amber)'); }
+function setComposeStatus(txt,color) {
+  var el = document.getElementById('compose-status');
+  el.textContent = txt; el.style.color = color||'';
+}
+
+function saveDraft() {
+  showToast('info','Draft saved','');
+  setComposeStatus('Draft saved','var(--green)');
+  addLog('info','Draft saved','Subject: '+document.getElementById('subject').value);
+}
+
+function clearCompose() {
+  if(!confirm('Clear all compose fields?')) return;
+  ['from-field','subject','reply-to'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('body-editor').innerHTML='';
+  toChips=[];ccChips=[];bccChips=[];attachFiles=[];
+  renderChips('to');renderChips('cc');renderChips('bcc');renderAttachments();
+  setComposeStatus('Draft','');
+  showToast('info','Cleared','');
+}
+
+function previewEmail() {
+  var from=document.getElementById('from-field').value||'—';
+  var to=toChips.length?toChips.join(', '):'—';
+  var cc=ccChips.length?ccChips.join(', '):'—';
+  var subj=document.getElementById('subject').value||'(no subject)';
+  document.getElementById('preview-headers').innerHTML =
+    '<div><span style="color:var(--accent)">From:</span>    '+from+'</div>'+
+    '<div><span style="color:var(--accent)">To:</span>      '+to+'</div>'+
+    (ccChips.length?'<div><span style="color:var(--accent)">Cc:</span> '+cc+'</div>':'')+
+    '<div><span style="color:var(--accent)">Subject:</span> '+subj+'</div>'+
+    '<div><span style="color:var(--accent)">Priority:</span>'+document.getElementById('priority').value+'</div>'+
+    '<div><span style="color:var(--accent)">Format:</span>  '+document.getElementById('format').value+'</div>'+
+    '<div><span style="color:var(--accent)">Attach:</span>  '+attachFiles.length+' file(s)</div>';
+  document.getElementById('preview-body').innerHTML = document.getElementById('body-editor').innerHTML||'<p style="color:#999">No content</p>';
+  document.getElementById('preview-modal').classList.add('open');
+}
+
+// ──────────────────────────────────────────────
+//  Log
+// ──────────────────────────────────────────────
+function addLog(type, msg, meta) {
+  logEntries.unshift({type:type,msg:msg,meta:meta||'',time:new Date()});
+  renderLog(); updateLogBadge();
+}
+
+function renderLog() {
+  var list=document.getElementById('log-list');
+  var empty=document.getElementById('log-empty');
+  if(!logEntries.length){
+    empty.style.display='flex';
+    list.innerHTML='';
+    return;
+  }
+  empty.style.display='none';
+  list.innerHTML='';
+  logEntries.forEach(function(e){
+    var d=document.createElement('div'); d.className='log-entry';
+    var iconMap={sent:'check',fail:'x',info:'info',warn:'alert-triangle'};
+    d.innerHTML='<span class="log-badge '+e.type+'"><i data-lucide="'+(iconMap[e.type]||'circle')+'" style="width:12px;height:12px;stroke-width:2.5px;"></i></span>'+
+      '<div class="log-detail"><div class="log-msg">'+e.msg+'</div>'+(e.meta?'<div class="log-meta">'+e.meta+'</div>':'')+'</div>'+
+      '<div class="log-time">'+e.time.toLocaleTimeString()+'</div>';
+    list.appendChild(d);
+  });
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  document.getElementById('log-count').textContent=logEntries.length+' entr'+(logEntries.length===1?'y':'ies');
+}
+
+function clearLog() { logEntries=[]; renderLog(); updateLogBadge(); }
+
+function updateLogBadge() {
+  var b=document.getElementById('log-badge');
+  if(logEntries.length){b.style.display='inline';b.textContent=logEntries.length;}
+  else b.style.display='none';
+}
+
+// ──────────────────────────────────────────────
+//  Toast
+// ──────────────────────────────────────────────
+var ICONS = {success:'check-circle',error:'x-circle',info:'info',warn:'alert-triangle'};
+function showToast(type,title,desc){
+  var c=document.getElementById('toast-container');
+  var t=document.createElement('div'); t.className='toast';
+  t.innerHTML='<span class="toast-icon"><i data-lucide="'+ICONS[type]+'" style="width:18px;height:18px;color:var(--text-secondary)"></i></span>'+
+    '<div class="toast-body"><div class="toast-title">'+title+'</div>'+(desc?'<div class="toast-desc">'+desc+'</div>':'')+'</div>';
+  c.appendChild(t);
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  setTimeout(function(){t.classList.add('toast-out');setTimeout(function(){if(t.parentNode)t.parentNode.removeChild(t);},200);},4000);
+}
+
+// ──────────────────────────────────────────────
+//  Misc
+// ──────────────────────────────────────────────
+function switchTab(n){
+  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById('panel-'+n).classList.add('active');
+  document.getElementById('tab-'+n).classList.add('active');
+}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-overlay').forEach(function(m){
+  m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('open');});
+});
+
+// ──────────────────────────────────────────────
+//  Gmail hint
+// ──────────────────────────────────────────────
+function checkGmailHint() {
+  var host = document.getElementById('cfg-host').value.toLowerCase();
+  var user = document.getElementById('cfg-user').value.toLowerCase();
+  var hint = document.getElementById('gmail-hint');
+  if (host.includes('gmail') || user.includes('gmail')) {
+    hint.style.display = 'block';
+  } else {
+    hint.style.display = 'none';
+  }
+}
+
+// ──────────────────────────────────────────────
+//  Theme
+// ──────────────────────────────────────────────
+function toggleTheme() {
+  document.body.classList.toggle('light-mode');
+  var isLight = document.body.classList.contains('light-mode');
+  localStorage.setItem('mf_theme', isLight ? 'light' : 'dark');
+  updateThemeIcon();
+}
+
+function updateThemeIcon() {
+  var icon = document.getElementById('theme-icon');
+  var isLight = document.body.classList.contains('light-mode');
+  icon.setAttribute('data-lucide', isLight ? 'sun' : 'moon');
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function loadTheme() {
+  var theme = localStorage.getItem('mf_theme');
+  if (theme === 'light') {
+    document.body.classList.add('light-mode');
+  }
+  updateThemeIcon();
+}
+
+// ──────────────────────────────────────────────
+//  Init
+// ──────────────────────────────────────────────
+function init(){
+  loadTheme();
+  loadConfig();
+  checkServer();
+  checkGmailHint();
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  setInterval(checkServer, 10000);
+  addLog('info','MailForge ready','Open http://localhost:3500 in your browser');
+}
+init();
+</script>
+</body>
+</html>
