@@ -6,7 +6,9 @@ const path = require('path');
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
-app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve static files from the public directory (needed for local development)
+app.use(express.static(path.join(__dirname, '../public')));
 
 // ─── Build transporter from config ───
 function buildTransporter(cfg) {
@@ -163,6 +165,11 @@ app.post('/api/send', async (req, res) => {
   } finally {
     try { transporter.close(); } catch(_) {}
   }
+});
+
+// ─── Serve index.html for all other routes ───
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 if (require.main === module) {
